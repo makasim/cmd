@@ -66,6 +66,8 @@ type Cmd struct {
 	StderrWriter io.Writer
 	Stdout chan string // streaming STDOUT if enabled, else nil (see Options)
 	Stderr chan string // streaming STDERR if enabled, else nil (see Options)
+	Uid    uint32
+	Gid    uint32
 	*sync.Mutex
 	started    bool          // cmd.Start called, no error
 	stopped    bool          // Stop called
@@ -298,6 +300,17 @@ func (c *Cmd) run() {
 	// process group. This allows Stop to SIGTERM the cmd's process group
 	// without killing this process (i.e. this code here).
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
+	if c.Uid != 0 || c.Gid != 0 {
+		cmd.SysProcAttr.Credential = &syscall.Credential{}
+
+		if c.Uid != 0 {
+			cmd.SysProcAttr.Credential.Uid = c.Uid
+		}
+		if c.Gid != 0 {
+			cmd.SysProcAttr.Credential.Gid = c.Gid
+		}
+	}
 
 	// Write stdout and stderr to buffers that are safe to read while writing
 	// and don't cause a race condition.
