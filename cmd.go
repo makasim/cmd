@@ -62,6 +62,8 @@ type Cmd struct {
 	Args   []string
 	Env    []string
 	Dir    string
+	StdoutWriter io.Writer
+	StderrWriter io.Writer
 	Stdout chan string // streaming STDOUT if enabled, else nil (see Options)
 	Stderr chan string // streaming STDERR if enabled, else nil (see Options)
 	*sync.Mutex
@@ -315,6 +317,9 @@ func (c *Cmd) run() {
 		// Streaming only
 		cmd.Stdout = NewOutputStream(c.Stdout)
 		cmd.Stderr = NewOutputStream(c.Stderr)
+	} else if c.StdoutWriter != nil || c.StderrWriter != nil {
+		cmd.Stdout = c.StdoutWriter
+		cmd.Stderr = c.StderrWriter
 	} else {
 		// No output (effectively >/dev/null 2>&1)
 		cmd.Stdout = nil
